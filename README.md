@@ -11,7 +11,7 @@ Este proyecto contiene un script en Python que utiliza Selenium para la extracci
 
 ## Requisitos
 Before running the script, ensure you have the following installed:
-- Python 3.7 or superior
+- Python 3.10 or superior
 - Google Chrome
 - ChromeDriver
 - librerias:
