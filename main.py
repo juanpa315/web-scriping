@@ -96,9 +96,3 @@ for propiedad in propiedades_encontradas:
 json_data = json.dumps(data, indent=2, ensure_ascii=False)
 print(json_data)
 driver.quit()
-
-'''
-titulo = propiedad.find_element(By.XPATH, ".//h3/a").get_attribute("title")
-    ciudad = propiedad.find_element(By.XPATH, ".//div[@class='clearfix']//p[1]").text
-    precio = propiedad.find_element(By.XPATH, ".//div[@class='row']//strong[1]").text
-    '''
