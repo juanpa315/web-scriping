@@ -1,9 +1,8 @@
 from selenium import webdriver
 from selenium.webdriver.common.by import By 
 from selenium.webdriver.support.ui import Select
+import sys
 from selenium.common.exceptions import NoSuchElementException
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
 import json
 
 from selenium.webdriver.common.keys import Keys
@@ -12,9 +11,10 @@ from selenium.webdriver.common.keys import Keys
 
 propiedad = input("Tipo Propiedad:\n - 1 Casa\n - 2 Apartamento\nEnter your choice (1 or 2): ")
 
-#numero_pagina = input("Número de Página: ")
+numero_pagina = input("Número de Página: ")
 
-#nombre_archivo_salida = input("Nombre del archivo de salida: ")
+nombre_archivo_salida = input("Nombre del archivo de salida (sin extension): ")
+nombre_archivo_salida+=".json"
 
 '''
 print("\nCollected Answers:")
@@ -39,6 +39,7 @@ opcion_propiedades = "//*[@id='navbar']//a[text()='PROPIEDADES']"
 btn_ver_resultados = "//button[contains(@class, 'submitBtn') and text()='Ver Resultados']"
 resultados_busqueda = "//*[contains(@class, 'col-xs-12 col-sm-4 result')]//h3[@class='list-main-title']//a"
 resultados_busqueda2 = "//*[@class='result-content']"
+pagina= f"//*[contains(@class, 'btn-default')][{numero_pagina}]"
 
 def find_element_by_xpath(element):
     try:
@@ -67,6 +68,15 @@ dropdown.select_by_value(tipo_propiedad)
 element = find_element_by_xpath(btn_ver_resultados)
 element.click()
 
+# ir a la pagina seleccionada
+try:
+    pagina_seleccionada = driver.find_element(By.XPATH, pagina)
+    pagina_seleccionada.click()
+    print("loctor: ", pagina_seleccionada)
+except NoSuchElementException:
+    print("Página no existe, por favor intente nuevamente")
+    sys.exit()
+
 
 # Obtener datos dentro de realityrealtypr.com 
 propiedades_encontradas = driver.find_elements(By.XPATH,  resultados_busqueda2)
@@ -85,14 +95,31 @@ for propiedad in propiedades_encontradas:
     precio = driver.find_element(By.XPATH, "//*[@class='sale-rent-title']").text
     descripcion = driver. find_element(By.ID, "home").text 
     flyer = driver.find_element(By.XPATH, "//div[@class='col-xs-12 col-sm-4 title-side']//a[@target='_blank']").get_attribute("href")
+
+    imagenes = driver.find_elements(By.XPATH, "//*[@class='thumb']//img")
+    url_imagenes = []
+    contador = 1  
+
+    for imagen in imagenes:
+        ruta_imagen = imagen.get_attribute("src")  
+        url_imagenes.append(ruta_imagen) 
+        print(f"Imagen {contador}: {ruta_imagen}")  
+        contador += 1  
+
+
     driver.close()
     driver.switch_to.window(original_winow)
 
-    data.append({"url": url, "title": titulo, "ciudad":ciudad, "precio": precio, "Descripcion": descripcion, "Flyer": flyer})
+    data.append({"url": url, "title": titulo, "city":ciudad, "price": precio, "description": descripcion, "images": url_imagenes, "Flyer": flyer})
     
     
 
 #Print data into json format
 json_data = json.dumps(data, indent=2, ensure_ascii=False)
 print(json_data)
+
+with open(nombre_archivo_salida, "w", encoding="utf-8") as file:
+    file.write(json_data)  # Write the JSON string to the file
+
+print("JSON data successfully saved to output.json")
 driver.quit()
