@@ -5,51 +5,9 @@ import sys
 from selenium.common.exceptions import NoSuchElementException
 import json
 
-from selenium.webdriver.common.keys import Keys
-
 # Criterios de entrada
 
 propiedad = input("Tipo Propiedad:\n - 1 Casa\n - 2 Apartamento\nEnter your choice (1 or 2): ")
-
-numero_pagina = input("Número de Página: ")
-
-nombre_archivo_salida = input("Nombre del archivo de salida (sin extension): ")
-nombre_archivo_salida+=".json"
-
-'''
-print("\nCollected Answers:")
-print(f"Tipo Propiedad: {propiedad}")
-print(f"Número de Página: {numero_pagina}")
-print(f"Nombre del archivo de salida: {nombre_archivo_salida}")
-'''
-
-#set up
-driver = webdriver.Chrome()
-driver.get("https://www.realityrealtypr.com/")
-driver.maximize_window()
-
-def open_new_tap(url):
-    driver.execute_script("window.open('');")
-    driver.switch_to.window(driver.window_handles[1])
-    driver.get(url)
-    
-
-# Localizadores
-opcion_propiedades = "//*[@id='navbar']//a[text()='PROPIEDADES']"
-btn_ver_resultados = "//button[contains(@class, 'submitBtn') and text()='Ver Resultados']"
-resultados_busqueda = "//*[contains(@class, 'col-xs-12 col-sm-4 result')]//h3[@class='list-main-title']//a"
-resultados_busqueda2 = "//*[@class='result-content']"
-pagina= f"//*[contains(@class, 'btn-default')][{numero_pagina}]"
-
-def find_element_by_xpath(element):
-    try:
-        element = driver.find_element(By.XPATH, element)
-        return element
-    except NoSuchElementException:
-        print(f"Element not found with XPath: {element}")
-        return None
-
-# Perform item search
 tipo_propiedad = ''
 if propiedad == "1" :
     tipo_propiedad = "Residential:1"
@@ -57,69 +15,93 @@ elif propiedad == "2":
     tipo_propiedad = "Residential:5"
 else:
     print("invalid property")
+    sys.exit()
 
-element = find_element_by_xpath(opcion_propiedades)
-element.click()
+numero_pagina = input("Número de Página: ")
+nombre_archivo_salida = input("Nombre del archivo de salida (sin extension): ")
+nombre_archivo_salida+=".json"
 
-dropdown_element = driver.find_element(By.XPATH, "//select[@name='search[property_type]' and contains(@class, 'searchField')]")
-dropdown = Select(dropdown_element)
-dropdown.select_by_value(tipo_propiedad)
+#funciones generales
+def open_new_tap(url):
+    driver.execute_script("window.open('');")
+    driver.switch_to.window(driver.window_handles[1])
+    driver.get(url)
+    
 
-element = find_element_by_xpath(btn_ver_resultados)
-element.click()
+# Localizadores
+locator_opcion_propiedades = "//*[@id='navbar']//a[text()='PROPIEDADES']"
+locator_btn_ver_resultados = "//button[contains(@class, 'submitBtn') and text()='Ver Resultados']"
+locator_resultados_busqueda = "//*[@class='result-content']//h3/a"
+locator_pagina= f"//*[contains(@class, 'btn-default')][{numero_pagina}]"
+locator_select_tipo_propiedad = "//select[@name='search[property_type]' and contains(@class, 'searchField')]"
+locator_titulo = "//*[@class='col-xs-12 col-sm-8']//h1"
+locator_ciudad= "//*[@class='col-xs-12 col-sm-8']//p"
+locator_precio= "//*[@class='sale-rent-title']"
+locator_descripcion= "home"
+locator_imagenes= "//*[@class='thumb']//img"
+locator_flyer= "//div[@class='col-xs-12 col-sm-4 title-side']//a[@target='_blank']"
 
-# ir a la pagina seleccionada
+#set up
+driver = webdriver.Chrome()
+driver.get("https://www.realityrealtypr.com/")
+driver.maximize_window()
+
+# 1. Realizar Busqueda
+opcion_propiedades = driver.find_element(By.XPATH, locator_opcion_propiedades)
+opcion_propiedades.click()
+
+element_tipo_propiedad = driver.find_element(By.XPATH, locator_select_tipo_propiedad)
+values_tipo_propiedad = Select(element_tipo_propiedad)
+values_tipo_propiedad.select_by_value(tipo_propiedad)
+
+btn_ver_resultados = driver.find_element(By.XPATH, locator_btn_ver_resultados)
+btn_ver_resultados.click()
+
+# 2. ir a la pagina seleccionada
 try:
-    pagina_seleccionada = driver.find_element(By.XPATH, pagina)
+    pagina_seleccionada = driver.find_element(By.XPATH, locator_pagina)
     pagina_seleccionada.click()
-    print("loctor: ", pagina_seleccionada)
 except NoSuchElementException:
     print("Página no existe, por favor intente nuevamente")
     sys.exit()
 
 
-# Obtener datos dentro de realityrealtypr.com 
-propiedades_encontradas = driver.find_elements(By.XPATH,  resultados_busqueda2)
+# 3. Hacer scrapper
+propiedades_encontradas = driver.find_elements(By.XPATH,  locator_resultados_busqueda)
 data = []
 
 for propiedad in propiedades_encontradas:
     
-    url = propiedad.find_element(By.XPATH, ".//h3/a").get_attribute("href")
-    print("url", url)
-    original_winow = driver.current_window_handle
+    url = propiedad.get_attribute("href")
+    original_window = driver.current_window_handle
     open_new_tap(url)
     
     
-    titulo = driver.find_element(By.XPATH, "//*[@class='col-xs-12 col-sm-8']//h1").text
-    ciudad = driver.find_element(By.XPATH, "//*[@class='col-xs-12 col-sm-8']//p").text
-    precio = driver.find_element(By.XPATH, "//*[@class='sale-rent-title']").text
-    descripcion = driver. find_element(By.ID, "home").text 
-    flyer = driver.find_element(By.XPATH, "//div[@class='col-xs-12 col-sm-4 title-side']//a[@target='_blank']").get_attribute("href")
+    titulo = driver.find_element(By.XPATH, locator_titulo).text
+    ciudad = driver.find_element(By.XPATH, locator_ciudad).text
+    precio = driver.find_element(By.XPATH, locator_precio).text
+    descripcion = driver. find_element(By.ID, locator_descripcion).text 
+    flyer = driver.find_element(By.XPATH, locator_flyer).get_attribute("href")
 
-    imagenes = driver.find_elements(By.XPATH, "//*[@class='thumb']//img")
+    imagenes = driver.find_elements(By.XPATH, locator_imagenes)
     url_imagenes = []
-    contador = 1  
 
     for imagen in imagenes:
         ruta_imagen = imagen.get_attribute("src")  
         url_imagenes.append(ruta_imagen) 
-        print(f"Imagen {contador}: {ruta_imagen}")  
-        contador += 1  
 
 
     driver.close()
-    driver.switch_to.window(original_winow)
+    driver.switch_to.window(original_window)
 
     data.append({"url": url, "title": titulo, "city":ciudad, "price": precio, "description": descripcion, "images": url_imagenes, "Flyer": flyer})
     
     
 
-#Print data into json format
+# 4. generar archivo json con información
 json_data = json.dumps(data, indent=2, ensure_ascii=False)
-print(json_data)
-
 with open(nombre_archivo_salida, "w", encoding="utf-8") as file:
-    file.write(json_data)  # Write the JSON string to the file
+    file.write(json_data)
 
 print("JSON data successfully saved to output.json")
 driver.quit()
